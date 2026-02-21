@@ -327,7 +327,32 @@
                 const res = await response.json();
 
                 if (res.status === 'success') {
-                    alert(i18n[currentLang].alertSuccess);
+                    // 1. สร้างข้อความภาษาอังกฤษเพื่อส่งเข้า LINE
+                    const lineMsg = `📝 Registration Completed!\n` +
+                                    `Name: ${payload.firstName} ${payload.lastName}\n` +
+                                    `Emp ID: ${payload.empId}\n` +
+                                    `Dept: ${payload.department}\n` +
+                                    `Phone: ${payload.phone}\n` +
+                                    `Email: ${payload.email || '-'}`;
+
+                    // 2. ตรวจสอบว่าเปิดผ่านแอป LINE (Client) หรือไม่
+                    if (liff.isInClient()) {
+                        try {
+                            // สั่งให้ LIFF ส่งข้อความเข้าแชท
+                            await liff.sendMessages([
+                                { type: 'text', text: lineMsg }
+                            ]);
+                        } catch (msgErr) {
+                            console.error('Send message failed:', msgErr);
+                            // Fallback แจ้งเตือนปกติถ้าผู้ใช้ไม่ได้ให้สิทธิ์ส่งข้อความ (chat_message.write)
+                            alert(i18n[currentLang].alertSuccess); 
+                        }
+                    } else {
+                        // กรณีทดสอบเปิดบนเบราว์เซอร์ปกติ (Chrome/Safari) จะส่งข้อความเข้า LINE ไม่ได้ ให้ใช้ Alert โชว์ข้อความแทน
+                        alert(i18n[currentLang].alertSuccess + '\n\n' + lineMsg);
+                    }
+                    
+                    // ปิดหน้าต่าง LIFF
                     liff.closeWindow();
                 } else {
                     alert(i18n[currentLang].alertError + res.message);
