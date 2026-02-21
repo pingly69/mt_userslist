@@ -3,9 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบลงทะเบียนพนักงาน</title>
     
-    <!-- 🎨 Tailwind CSS (CDN) -->
+    <!-- 1. ป้องกันการ Load Cache ให้ HTML อัปเดตเสมอ -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    
+    <title>ระบบลงทะเบียนพนักงาน | Employee Registration</title>
+    
+    <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- LINE LIFF SDK -->
@@ -35,33 +41,37 @@
         }
     </script>
     <style>
-        /* Custom Loader */
         .loader {
             border-top-color: #10b981;
             -webkit-animation: spinner 1.5s linear infinite;
             animation: spinner 1.5s linear infinite;
         }
         @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
         .hidden { display: none !important; }
     </style>
 </head>
 <body class="bg-emerald-50 text-gray-700 h-screen flex flex-col items-center justify-center relative">
 
+    <!-- 🌐 Language Switcher -->
+    <div class="absolute top-4 right-4 z-50 flex bg-white rounded-lg shadow border border-emerald-100 overflow-hidden">
+        <button onclick="setLanguage('th')" id="btn-lang-th" class="px-3 py-1.5 text-xs font-bold bg-emerald-500 text-white transition">TH</button>
+        <button onclick="setLanguage('en')" id="btn-lang-en" class="px-3 py-1.5 text-xs font-bold bg-white text-gray-500 hover:bg-gray-50 transition">EN</button>
+    </div>
+
     <!-- 🟢 Loading Screen -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
+    <div id="loadingOverlay" class="fixed inset-0 bg-white z-40 flex flex-col items-center justify-center">
         <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
-        <h2 class="text-center text-gray-500 text-sm font-semibold">กำลังตรวจสอบข้อมูล...</h2>
+        <h2 id="txt-loading" class="text-center text-gray-500 text-sm font-semibold">กำลังตรวจสอบข้อมูล...</h2>
     </div>
 
     <!-- 🔴 Blocked Screen (Access Denied) -->
-    <div id="blockedScreen" class="hidden fixed inset-0 bg-white z-40 flex flex-col items-center justify-center p-6 text-center">
+    <div id="blockedScreen" class="hidden fixed inset-0 bg-white z-30 flex flex-col items-center justify-center p-6 text-center">
         <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-4">
             <i class="fas fa-ban text-red-500 text-4xl"></i>
         </div>
-        <h2 class="text-2xl font-bold text-gray-800 mb-2">ไม่สามารถเข้าใช้งานได้</h2>
-        <p class="text-gray-500 mb-6">บัญชีของคุณถูกระงับการใช้งาน หรือไม่มีสิทธิ์ในระบบนี้<br>กรุณาติดต่อผู้ดูแลระบบ</p>
-        <button onclick="liff.closeWindow()" class="bg-gray-800 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition">ปิดหน้าต่าง</button>
+        <h2 id="txt-blocked-title" class="text-2xl font-bold text-gray-800 mb-2">ไม่สามารถเข้าใช้งานได้</h2>
+        <p id="txt-blocked-desc" class="text-gray-500 mb-6">บัญชีของคุณถูกระงับการใช้งาน หรือไม่มีสิทธิ์ในระบบนี้<br>กรุณาติดต่อผู้ดูแลระบบ</p>
+        <button onclick="liff.closeWindow()" id="txt-btn-close" class="bg-gray-800 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition">ปิดหน้าต่าง</button>
     </div>
 
     <!-- 🟢 Main Form -->
@@ -70,8 +80,8 @@
         <!-- Header -->
         <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 p-6 text-white text-center relative">
             <div class="absolute top-4 right-4 text-emerald-200 opacity-50"><i class="fas fa-id-card text-6xl"></i></div>
-            <h1 class="text-2xl font-bold relative z-10">ลงทะเบียนพนักงาน</h1>
-            <p class="text-emerald-100 text-sm relative z-10 mt-1">กรุณากรอกข้อมูลให้ครบถ้วน</p>
+            <h1 id="txt-form-title" class="text-2xl font-bold relative z-10">ลงทะเบียนพนักงาน</h1>
+            <p id="txt-form-subtitle" class="text-emerald-100 text-sm relative z-10 mt-1">กรุณากรอกข้อมูลให้ครบถ้วน</p>
         </div>
 
         <!-- Line Profile Section -->
@@ -87,32 +97,33 @@
         <form id="registerForm" class="p-6 space-y-4">
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-600 mb-1">ชื่อ <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-gray-600 mb-1"><span id="txt-fname">ชื่อ</span> <span class="text-red-500">*</span></label>
                     <input type="text" id="firstName" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-600 mb-1">นามสกุล <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-gray-600 mb-1"><span id="txt-lname">นามสกุล</span> <span class="text-red-500">*</span></label>
                     <input type="text" id="lastName" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition">
                 </div>
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1">รหัสพนักงาน <span class="text-red-500">*</span></label>
+                <!-- การบันทึกเป็น Text จัดการที่ฝั่ง Backend แล้ว -->
+                <label class="block text-sm font-medium text-gray-600 mb-1"><span id="txt-empid">รหัสพนักงาน</span> <span class="text-red-500">*</span></label>
                 <input type="text" id="empId" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition">
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1">หน่วยงาน <span class="text-red-500">*</span></label>
+                <label class="block text-sm font-medium text-gray-600 mb-1"><span id="txt-dept">หน่วยงาน</span> <span class="text-red-500">*</span></label>
                 <input type="text" id="department" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition">
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-600 mb-1">เบอร์โทร <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-gray-600 mb-1"><span id="txt-phone">เบอร์โทร</span> <span class="text-red-500">*</span></label>
                     <input type="tel" id="phone" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-600 mb-1">Email <span class="text-gray-400 font-light">(ถ้ามี)</span></label>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Email <span id="txt-optional" class="text-gray-400 font-light">(ถ้ามี)</span></label>
                     <input type="email" id="email" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition">
                 </div>
             </div>
@@ -127,18 +138,99 @@
 
     <!-- JavaScript Logic -->
     <script>
-        // ================= CONFIGURATION =================
+        // ================= 2. CONFIGURATION =================
         const CONFIG = {
-            LIFF_ID: '2009016720-AoATP5Bg', // <-- ใส่ LIFF ID ที่นี่
-            GAS_API_URL: 'https://script.google.com/macros/s/AKfycby2KKxMNC3VJrXHRZTbZCZDhBUcHYoDruBP-ajZPpNg8ZffdVjEis6NMiiqdwxqX1tY/exec' // <-- ใส่ URL จาก Apps Script Deployment
+            LIFF_ID: '2009016720-AoATP5Bg', 
+            GAS_API_URL: 'https://script.google.com/macros/s/AKfycby2KKxMNC3VJrXHRZTbZCZDhBUcHYoDruBP-ajZPpNg8ZffdVjEis6NMiiqdwxqX1tY/exec'
         };
-        // =================================================
+        // ====================================================
 
+        // ================= 4. DICTIONARY (TH/EN) ============
+        const i18n = {
+            th: {
+                loading: "กำลังตรวจสอบข้อมูล...",
+                blockedTitle: "ไม่สามารถเข้าใช้งานได้",
+                blockedDesc: "บัญชีของคุณถูกระงับการใช้งาน หรือไม่มีสิทธิ์ในระบบนี้<br>กรุณาติดต่อผู้ดูแลระบบ",
+                btnClose: "ปิดหน้าต่าง",
+                formTitle: "ลงทะเบียนพนักงาน",
+                formSubtitle: "กรุณากรอกข้อมูลให้ครบถ้วน",
+                fname: "ชื่อ",
+                lname: "นามสกุล",
+                empid: "รหัสพนักงาน",
+                dept: "หน่วยงาน",
+                phone: "เบอร์โทร",
+                optional: "(ถ้ามี)",
+                btnSave: "บันห์กข้อมูล",
+                btnUpdate: "อัปเดตข้อมูล",
+                btnSaving: "กำลังบันทึก...",
+                alertSuccess: "✅ บันทึกข้อมูลสำเร็จ!",
+                alertError: "❌ เกิดข้อผิดพลาด: ",
+                alertConn: "❌ การเชื่อมต่อขัดข้อง: "
+            },
+            en: {
+                loading: "Checking data...",
+                blockedTitle: "Access Denied",
+                blockedDesc: "Your account is suspended or unauthorized.<br>Please contact the administrator.",
+                btnClose: "Close Window",
+                formTitle: "Employee Registration",
+                formSubtitle: "Please fill in all required fields",
+                fname: "First Name",
+                lname: "Last Name",
+                empid: "Employee ID",
+                dept: "Department",
+                phone: "Phone Number",
+                optional: "(Optional)",
+                btnSave: "Save Data",
+                btnUpdate: "Update Data",
+                btnSaving: "Saving...",
+                alertSuccess: "✅ Saved successfully!",
+                alertError: "❌ Error: ",
+                alertConn: "❌ Connection Error: "
+            }
+        };
+
+        let currentLang = 'th'; // Default language
         let currentMode = 'APPEND'; // APPEND | EDIT
         let userProfile = null;
 
+        // ฟังก์ชันสลับภาษา
+        function setLanguage(lang) {
+            currentLang = lang;
+            
+            // อัปเดต UI ของปุ่มสลับภาษา
+            if(lang === 'th') {
+                document.getElementById('btn-lang-th').className = "px-3 py-1.5 text-xs font-bold bg-emerald-500 text-white transition";
+                document.getElementById('btn-lang-en').className = "px-3 py-1.5 text-xs font-bold bg-white text-gray-500 hover:bg-gray-50 transition";
+            } else {
+                document.getElementById('btn-lang-en').className = "px-3 py-1.5 text-xs font-bold bg-emerald-500 text-white transition";
+                document.getElementById('btn-lang-th').className = "px-3 py-1.5 text-xs font-bold bg-white text-gray-500 hover:bg-gray-50 transition";
+            }
+
+            // เปลี่ยน Text ตาม Dictionary
+            document.getElementById('txt-loading').innerHTML = i18n[lang].loading;
+            document.getElementById('txt-blocked-title').innerHTML = i18n[lang].blockedTitle;
+            document.getElementById('txt-blocked-desc').innerHTML = i18n[lang].blockedDesc;
+            document.getElementById('txt-btn-close').innerHTML = i18n[lang].btnClose;
+            document.getElementById('txt-form-title').innerHTML = i18n[lang].formTitle;
+            document.getElementById('txt-form-subtitle').innerHTML = i18n[lang].formSubtitle;
+            document.getElementById('txt-fname').innerHTML = i18n[lang].fname;
+            document.getElementById('txt-lname').innerHTML = i18n[lang].lname;
+            document.getElementById('txt-empid').innerHTML = i18n[lang].empid;
+            document.getElementById('txt-dept').innerHTML = i18n[lang].dept;
+            document.getElementById('txt-phone').innerHTML = i18n[lang].phone;
+            document.getElementById('txt-optional').innerHTML = i18n[lang].optional;
+
+            // อัปเดตปุ่ม Submit ตามโหมดปัจจุบัน
+            if (currentMode === 'EDIT') {
+                document.getElementById('btnText').innerText = i18n[lang].btnUpdate;
+            } else {
+                document.getElementById('btnText').innerText = i18n[lang].btnSave;
+            }
+        }
+
         // เริ่มทำงานเมื่อโหลดหน้า
         window.onload = async () => {
+            setLanguage('th'); // Init language
             await initLIFF();
         };
 
@@ -192,14 +284,15 @@
                             document.getElementById('phone').value = data.userData.phone;
                             document.getElementById('email').value = data.userData.email;
                             
-                            document.getElementById('btnText').innerText = 'อัปเดตข้อมูล';
+                            // อัปเดตข้อความปุ่ม
+                            document.getElementById('btnText').innerText = i18n[currentLang].btnUpdate;
                         }
                     }
                 } else {
-                    alert('Error checking user: ' + res.message);
+                    alert(i18n[currentLang].alertError + res.message);
                 }
             } catch (error) {
-                alert('Connection Error: ' + error);
+                alert(i18n[currentLang].alertConn + error);
             }
         }
 
@@ -212,7 +305,7 @@
             
             // Loading State
             btn.disabled = true;
-            document.getElementById('btnText').innerText = 'กำลังบันทึก...';
+            document.getElementById('btnText').innerText = i18n[currentLang].btnSaving;
 
             const payload = {
                 mode: currentMode,
@@ -234,13 +327,13 @@
                 const res = await response.json();
 
                 if (res.status === 'success') {
-                    alert('✅ บันทึกข้อมูลสำเร็จ!');
+                    alert(i18n[currentLang].alertSuccess);
                     liff.closeWindow();
                 } else {
-                    alert('❌ เกิดข้อผิดพลาด: ' + res.message);
+                    alert(i18n[currentLang].alertError + res.message);
                 }
             } catch (error) {
-                alert('❌ Connection Error: ' + error);
+                alert(i18n[currentLang].alertConn + error);
             } finally {
                 btn.disabled = false;
                 document.getElementById('btnText').innerText = originalText;
