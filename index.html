@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบลงทะเบียนพนักงาน</title>
+    
+    <!-- 🎨 Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- LINE LIFF SDK -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+    <!-- Font & Icon -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Config Theme สีเขียว -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Kanit', 'sans-serif'] },
+                    colors: {
+                        emerald: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            800: '#065f46'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Loader */
+        .loader {
+            border-top-color: #10b981;
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
+        }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="bg-emerald-50 text-gray-700 h-screen flex flex-col items-center justify-center relative">
+
+    <!-- 🟢 Loading Screen -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
+        <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
+        <h2 class="text-center text-gray-500 text-sm font-semibold">กำลังตรวจสอบข้อมูล...</h2>
+    </div>
+
+    <!-- 🔴 Blocked Screen (Access Denied) -->
+    <div id="blockedScreen" class="hidden fixed inset-0 bg-white z-40 flex flex-col items-center justify-center p-6 text-center">
+        <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-4">
+            <i class="fas fa-ban text-red-500 text-4xl"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">ไม่สามารถเข้าใช้งานได้</h2>
+        <p class="text-gray-500 mb-6">บัญชีของคุณถูกระงับการใช้งาน หรือไม่มีสิทธิ์ในระบบนี้<br>กรุณาติดต่อผู้ดูแลระบบ</p>
+        <button onclick="liff.closeWindow()" class="bg-gray-800 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition">ปิดหน้าต่าง</button>
+    </div>
+
+    <!-- 🟢 Main Form -->
+    <div id="mainForm" class="hidden w-full max-w-md bg-white shadow-xl rounded-2xl overflow-hidden my-4 mx-4">
+        
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 p-6 text-white text-center relative">
+            <div class="absolute top-4 right-4 text-emerald-200 opacity-50"><i class="fas fa-id-card text-6xl"></i></div>
+            <h1 class="text-2xl font-bold relative z-10">ลงทะเบียนพนักงาน</h1>
+            <p class="text-emerald-100 text-sm relative z-10 mt-1">กรุณากรอกข้อมูลให้ครบถ้วน</p>
+        </div>
+
+        <!-- Line Profile Section -->
+        <div class="px-6 py-4 flex items-center space-x-4 border-b border-gray-100 bg-gray-50">
+            <img id="lineAvatar" src="" class="w-12 h-12 rounded-full border-2 border-emerald-500 object-cover">
+            <div>
+                <p class="text-xs text-gray-500">LINE Account</p>
+                <p id="lineDisplayName" class="font-semibold text-emerald-800 text-lg"></p>
+            </div>
+        </div>
+
+        <!-- Form Inputs -->
+        <form id="registerForm" class="p-6 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">ชื่อ <span class="text-red-500">*</span></label>
+                    <input type="text" id="firstName" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">นามสกุล <span class="text-red-500">*</span></label>
+                    <input type="text" id="lastName" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">รหัสพนักงาน <span class="text-red-500">*</span></label>
+                <input type="text" id="empId" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">หน่วยงาน <span class="text-red-500">*</span></label>
+                <input type="text" id="department" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">เบอร์โทร <span class="text-red-500">*</span></label>
+                    <input type="tel" id="phone" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Email <span class="text-gray-400 font-light">(ถ้ามี)</span></label>
+                    <input type="email" id="email" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition">
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="submitBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transform hover:-translate-y-0.5 transition duration-200 mt-4 flex justify-center items-center">
+                <span id="btnText">บันทึกข้อมูล</span>
+                <i class="fas fa-save ml-2"></i>
+            </button>
+        </form>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // ================= CONFIGURATION =================
+        const CONFIG = {
+            LIFF_ID: '2009016720-AoATP5Bg', // <-- ใส่ LIFF ID ที่นี่
+            GAS_API_URL: 'https://script.google.com/macros/s/AKfycby2KKxMNC3VJrXHRZTbZCZDhBUcHYoDruBP-ajZPpNg8ZffdVjEis6NMiiqdwxqX1tY/exec' // <-- ใส่ URL จาก Apps Script Deployment
+        };
+        // =================================================
+
+        let currentMode = 'APPEND'; // APPEND | EDIT
+        let userProfile = null;
+
+        // เริ่มทำงานเมื่อโหลดหน้า
+        window.onload = async () => {
+            await initLIFF();
+        };
+
+        async function initLIFF() {
+            try {
+                await liff.init({ liffId: CONFIG.LIFF_ID });
+                
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
+
+                userProfile = await liff.getProfile();
+                
+                // Set UI Profile
+                document.getElementById('lineAvatar').src = userProfile.pictureUrl || 'https://via.placeholder.com/150';
+                document.getElementById('lineDisplayName').innerText = userProfile.displayName;
+
+                // Check Status with Backend
+                checkUserStatus(userProfile.userId);
+
+            } catch (err) {
+                alert('LIFF Error: ' + err);
+            }
+        }
+
+        async function checkUserStatus(userId) {
+            try {
+                const response = await fetch(CONFIG.GAS_API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'CHECK_USER', lineUserId: userId })
+                });
+                const res = await response.json();
+
+                if (res.status === 'success') {
+                    const data = res.data;
+                    document.getElementById('loadingOverlay').classList.add('hidden');
+
+                    if (data.mode === 'BLOCKED') {
+                        document.getElementById('blockedScreen').classList.remove('hidden');
+                    } else {
+                        document.getElementById('mainForm').classList.remove('hidden');
+                        currentMode = data.mode;
+                        
+                        if (data.mode === 'EDIT') {
+                            // Populate existing data
+                            document.getElementById('firstName').value = data.userData.firstName;
+                            document.getElementById('lastName').value = data.userData.lastName;
+                            document.getElementById('empId').value = data.userData.empId;
+                            document.getElementById('department').value = data.userData.department;
+                            document.getElementById('phone').value = data.userData.phone;
+                            document.getElementById('email').value = data.userData.email;
+                            
+                            document.getElementById('btnText').innerText = 'อัปเดตข้อมูล';
+                        }
+                    }
+                } else {
+                    alert('Error checking user: ' + res.message);
+                }
+            } catch (error) {
+                alert('Connection Error: ' + error);
+            }
+        }
+
+        // Handle Form Submit
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('submitBtn');
+            const originalText = document.getElementById('btnText').innerText;
+            
+            // Loading State
+            btn.disabled = true;
+            document.getElementById('btnText').innerText = 'กำลังบันทึก...';
+
+            const payload = {
+                mode: currentMode,
+                lineUserId: userProfile.userId,
+                lineName: userProfile.displayName,
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                empId: document.getElementById('empId').value,
+                department: document.getElementById('department').value,
+                phone: document.getElementById('phone').value,
+                email: document.getElementById('email').value
+            };
+
+            try {
+                const response = await fetch(CONFIG.GAS_API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'SAVE_USER', payload: payload })
+                });
+                const res = await response.json();
+
+                if (res.status === 'success') {
+                    alert('✅ บันทึกข้อมูลสำเร็จ!');
+                    liff.closeWindow();
+                } else {
+                    alert('❌ เกิดข้อผิดพลาด: ' + res.message);
+                }
+            } catch (error) {
+                alert('❌ Connection Error: ' + error);
+            } finally {
+                btn.disabled = false;
+                document.getElementById('btnText').innerText = originalText;
+            }
+        });
+    </script>
+</body>
+</html>
